@@ -6,42 +6,6 @@ Created on Fri Feb 20 11:32:12 2026
 @author: hiro
 """
 
-import os
-
-import os
-os.getcwd()
-
-
-
-from pathlib import Path
-data_dir = Path("/Users/hiro/Documents/github/Wooldridge/data")
-import pandas as pd
-
-# Folder where your .dta files are stored
-#data_dir = Path("data")
-
-# Load all .dta files into a dict: {"mroz": df, "wagepan": df, ...}
-datasets = {
-    f.stem: pd.read_stata(f)
-    for f in data_dir.glob("*.dta")
-}
-
-print(datasets.keys())         # all dataset names
-print(datasets["mroz"].head()) # access dataset by name
-
-from pathlib import Path
-import pandas as pd
-
-data_dir = Path("data")
-
-for f in data_dir.glob("*.dta"):
-    globals()[f.stem] = pd.read_stata(f)
-
-# Example
-print(mroz.head())
-print(wagepan.head())
-
-
 from pathlib import Path
 import pyreadstat
 
@@ -60,18 +24,67 @@ for f in data_dir.glob("*.dta"):
 print("Loaded:", len(datasets))
 print("Some names:", list(datasets.keys())[:10])
 
-if "mroz" in datasets:
-    print(datasets["mroz"].head())
-
-if errors:
-    print("\nErrors:")
-    for k, v in errors.items():
-        print(k, "->", v)
-        
-
 
 for name, df in datasets.items():
     globals()[name] = df
 
-print(mroz.head())
-print(wagepan.head())
+
+########################################################################################################################################################################################
+# Statistical/Econometric Way
+
+#0. Setup
+
+
+X = mroz[['exper',
+          'expersq',
+          'educ',
+          'age',
+          'kidslt6',
+          'kidsge6']].copy().reset_index(drop=True)
+
+y = mroz['lwage']
+
+
+
+#1. Drop NAs and do the simplest analysis
+
+
+
+
+#1.1. OLS
+import statsmodels.api as sm
+import numpy as np
+
+
+
+
+
+X = sm.add_constant(X)  # adds the intercept explicitly
+model = sm.OLS(y, X).fit()
+print(model.summary())
+
+
+
+#1.2. Heteroskedasticity robust!
+
+model_hc3  = sm.OLS(y,x).fit(cov_type='HC3')
+print(model_hc3.summary())
+
+#2. Instrumental Variables
+print("FIRST STAGE — instrument relevance:")
+fs_X = sm.add_constant(df[Z_cols + X_cols])
+fs   = sm.OLS(df[T_col], fs_X).fit()
+fs_fstat = fs.fvalue
+print(f"  F-statistic on instruments: {fs_fstat:.2f}  "
+      f"({'STRONG (>10)' if fs_fstat > 10 else 'WEAK'})")
+print(f"  fatheduc coef: {fs.params['fatheduc']:.4f}  p={fs.pvalues['fatheduc']:.4f}")
+print(f"  motheduc coef: {fs.params['motheduc']:.4f}  p={fs.pvalues['motheduc']:.4f}\n")
+
+
+
+
+
+########################################################################################################################################################################################
+# ML Way
+
+
